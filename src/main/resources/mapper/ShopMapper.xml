@@ -1,0 +1,373 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.hmb.dao.ShopMapper">
+    <resultMap id="BaseResultMap" type="com.hmb.pojo.Shop">
+        <id column="shop_id" jdbcType="INTEGER" property="shopId"/>
+        <result column="owner_id" jdbcType="INTEGER" property="ownerId"/>
+        <result column="area_id" jdbcType="INTEGER" property="areaId"/>
+        <result column="shop_category_id" jdbcType="INTEGER" property="shopCategoryId"/>
+        <result column="parent_category_id" jdbcType="INTEGER" property="parentCategoryId"/>
+        <result column="shop_name" jdbcType="VARCHAR" property="shopName"/>
+        <result column="shop_desc" jdbcType="VARCHAR" property="shopDesc"/>
+        <result column="shop_addr" jdbcType="VARCHAR" property="shopAddr"/>
+        <result column="phone" jdbcType="VARCHAR" property="phone"/>
+        <result column="shop_img" jdbcType="VARCHAR" property="shopImg"/>
+        <result column="longitude" jdbcType="DOUBLE" property="longitude"/>
+        <result column="latitude" jdbcType="DOUBLE" property="latitude"/>
+        <result column="priority" jdbcType="INTEGER" property="priority"/>
+        <result column="create_time" jdbcType="TIMESTAMP" property="createTime"/>
+        <result column="last_edit_time" jdbcType="TIMESTAMP" property="lastEditTime"/>
+        <result column="enable_status" jdbcType="INTEGER" property="enableStatus"/>
+        <result column="advice" jdbcType="VARCHAR" property="advice"/>
+        <association property="area" column="area_id"
+                     javaType="com.hmb.pojo.Area">
+            <id column="area_id" property="areaId"/>
+            <result column="area_name" property="areaName"/>
+        </association>
+        <association property="shopCategory" column="shop_category_id"
+                     javaType="com.hmb.pojo.ShopCategory">
+            <id column="shop_category_id" property="shopCategoryId"/>
+            <result column="shop_category_name" property="shopCategoryName"/>
+        </association>
+        <association property="personInfo" column="parent_category_id"
+                     javaType="com.hmb.pojo.PersonInfo">
+            <id column="user_id" property="userId"/>
+            <result column="name" property="name"/>
+        </association>
+    </resultMap>
+    <sql id="Base_Column_List">
+    shop_id, owner_id, area_id, shop_category_id, parent_category_id, shop_name, shop_desc, 
+    shop_addr, phone, shop_img, longitude, latitude, priority, create_time, last_edit_time, 
+    enable_status, advice
+  </sql>
+    <select id="selectByPrimaryKey" parameterType="java.lang.Integer" resultMap="BaseResultMap">
+        select
+        <include refid="Base_Column_List"/>
+        from tb_shop
+        where shop_id = #{shopId,jdbcType=INTEGER}
+    </select>
+    <select id="queryByShopId" resultMap="BaseResultMap">
+    select
+    s.shop_id,
+    s.shop_name,
+    s.shop_desc,
+    s.shop_addr,
+    s.phone,
+    s.shop_img,
+    s.priority,
+    s.create_time,
+    s.last_edit_time,
+    s.enable_status,
+    s.advice,
+    a.area_id,
+    a.area_name,
+    sc.shop_category_id,
+    sc.shop_category_name
+    from
+    tb_shop s,
+    tb_area a,
+    tb_shop_category sc
+    where
+    s.area_id = a.area_id
+    and
+    s.shop_category_id = sc.shop_category_id
+    and
+    s.shop_id = #{shopId}
+  </select>
+
+    <select id="queryShopList" resultMap="BaseResultMap">
+        SELECT
+        s.shop_id,
+        s.owner_id,
+        s.area_id,
+        s.shop_category_id,
+        s.parent_category_id,
+        s.shop_name,
+        s.shop_desc,
+        s.shop_addr,
+        s.phone,
+        s.shop_img,
+        s.longitude,
+        s.latitude,
+        s.priority,
+        s.create_time,
+        s.last_edit_time,
+        s.enable_status,
+        s.advice,
+        sc.shop_category_id,
+        sc.shop_category_name,
+        a.area_name,
+        a.area_id
+        FROM
+        tb_shop s,
+        tb_area a,
+        tb_shop_category sc
+        <where>
+            <if test="shopCondition.shopCategory!=null
+		 and shopCondition.shopCategory.shopCategoryId!=null">
+                and s.shop_category_id =
+                #{shopCondition.shopCategory.shopCategoryId}
+            </if>
+            <if test="shopCondition.shopCategory!=null and
+      shopCondition.shopCategory.parent !=null and
+        shopCondition.shopCategory.parent.shopCategoryId != null">
+                and s.shop_category_id in (select shop_category_id from tb_shop_category
+                where parent_id = #{shopCondition.shopCategory.parent.shopCategoryId})
+            </if>
+            <if test="shopCondition.area!=null
+				 and shopCondition.area.areaId!=null">
+                and s.area_id =
+                #{shopCondition.area.areaId}
+            </if>
+            <!-- 写like语句的时候 一般都会写成 like '% %' 在mybatis里面写就是应该是 like '%${name} %' 而不是
+                '%#{name} %' ${name} 是不带单引号的，而#{name} 是带单引号的 -->
+            <if test="shopCondition.shopName!=null">
+                and shop_name like '%${shopCondition.shopName}%'
+            </if>
+            <if test="shopCondition.enableStatus!=null">
+                and enable_status = #{shopCondition.enableStatus}
+            </if>
+        </where>
+        ORDER BY
+        priority DESC
+    </select>
+    <select id="queryByEmployeeId" resultType="com.hmb.pojo.Shop">
+        <!-- 具体的sql -->
+        SELECT
+        s.shop_id,
+        s.shop_name,
+        s.shop_desc,
+        s.phone,
+        s.shop_img,
+        s.longitude,
+        s.latitude,
+        s.priority,
+        s.create_time,
+        s.last_edit_time,
+        s.enable_status,
+        s.advice,
+        p.employee_id,
+        p.name
+        FROM
+        tb_shop s
+        LEFT JOIN
+        tb_shop_auth_map
+        p ON s.shop_id =
+        p.shop_id
+        WHERE
+        p.employee_id =
+        #{employeeId}
+    </select>
+    <delete id="deleteByPrimaryKey" parameterType="java.lang.Integer">
+    delete from tb_shop
+    where shop_id = #{shopId,jdbcType=INTEGER}
+  </delete>
+    <insert id="insert" parameterType="com.hmb.pojo.Shop">
+    insert into tb_shop (shop_id, owner_id, area_id, 
+      shop_category_id, parent_category_id, shop_name, 
+      shop_desc, shop_addr, phone, 
+      shop_img, longitude, latitude, 
+      priority, create_time, last_edit_time, 
+      enable_status, advice)
+    values (#{shopId,jdbcType=INTEGER}, #{ownerId,jdbcType=INTEGER}, #{areaId,jdbcType=INTEGER}, 
+      #{shopCategoryId,jdbcType=INTEGER}, #{parentCategoryId,jdbcType=INTEGER}, #{shopName,jdbcType=VARCHAR}, 
+      #{shopDesc,jdbcType=VARCHAR}, #{shopAddr,jdbcType=VARCHAR}, #{phone,jdbcType=VARCHAR}, 
+      #{shopImg,jdbcType=VARCHAR}, #{longitude,jdbcType=DOUBLE}, #{latitude,jdbcType=DOUBLE}, 
+      #{priority,jdbcType=INTEGER}, #{createTime,jdbcType=TIMESTAMP}, #{lastEditTime,jdbcType=TIMESTAMP}, 
+      #{enableStatus,jdbcType=INTEGER}, #{advice,jdbcType=VARCHAR})
+  </insert>
+    <insert id="insertSelective" parameterType="com.hmb.pojo.Shop" useGeneratedKeys="true" keyColumn="shop_id"
+            keyProperty="shopId">
+        insert into tb_shop
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="shopId != null">
+                shop_id,
+            </if>
+            <if test="ownerId != null">
+                owner_id,
+            </if>
+            <if test="areaId != null">
+                area_id,
+            </if>
+            <if test="shopCategoryId != null">
+                shop_category_id,
+            </if>
+            <if test="parentCategoryId != null">
+                parent_category_id,
+            </if>
+            <if test="shopName != null">
+                shop_name,
+            </if>
+            <if test="shopDesc != null">
+                shop_desc,
+            </if>
+            <if test="shopAddr != null">
+                shop_addr,
+            </if>
+            <if test="phone != null">
+                phone,
+            </if>
+            <if test="shopImg != null">
+                shop_img,
+            </if>
+            <if test="longitude != null">
+                longitude,
+            </if>
+            <if test="latitude != null">
+                latitude,
+            </if>
+            <if test="priority != null">
+                priority,
+            </if>
+            <if test="createTime != null">
+                create_time,
+            </if>
+            <if test="lastEditTime != null">
+                last_edit_time,
+            </if>
+            <if test="enableStatus != null">
+                enable_status,
+            </if>
+            <if test="advice != null">
+                advice,
+            </if>
+        </trim>
+        <trim prefix="values (" suffix=")" suffixOverrides=",">
+            <if test="shopId != null">
+                #{shopId,jdbcType=INTEGER},
+            </if>
+            <if test="ownerId != null">
+                #{ownerId,jdbcType=INTEGER},
+            </if>
+            <if test="areaId != null">
+                #{areaId,jdbcType=INTEGER},
+            </if>
+            <if test="shopCategoryId != null">
+                #{shopCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="parentCategoryId != null">
+                #{parentCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="shopName != null">
+                #{shopName,jdbcType=VARCHAR},
+            </if>
+            <if test="shopDesc != null">
+                #{shopDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="shopAddr != null">
+                #{shopAddr,jdbcType=VARCHAR},
+            </if>
+            <if test="phone != null">
+                #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="shopImg != null">
+                #{shopImg,jdbcType=VARCHAR},
+            </if>
+            <if test="longitude != null">
+                #{longitude,jdbcType=DOUBLE},
+            </if>
+            <if test="latitude != null">
+                #{latitude,jdbcType=DOUBLE},
+            </if>
+            <if test="priority != null">
+                #{priority,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="lastEditTime != null">
+                #{lastEditTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="enableStatus != null">
+                #{enableStatus,jdbcType=INTEGER},
+            </if>
+            <if test="advice != null">
+                #{advice,jdbcType=VARCHAR},
+            </if>
+        </trim>
+    </insert>
+    <update id="updateByPrimaryKeySelective" parameterType="com.hmb.pojo.Shop">
+        update tb_shop
+        <set>
+            <if test="ownerId != null">
+                owner_id = #{ownerId,jdbcType=INTEGER},
+            </if>
+            <if test="areaId != null">
+                area_id = #{areaId,jdbcType=INTEGER},
+            </if>
+            <if test="shopCategoryId != null">
+                shop_category_id = #{shopCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="parentCategoryId != null">
+                parent_category_id = #{parentCategoryId,jdbcType=INTEGER},
+            </if>
+            <if test="shopName != null">
+                shop_name = #{shopName,jdbcType=VARCHAR},
+            </if>
+            <if test="shopDesc != null">
+                shop_desc = #{shopDesc,jdbcType=VARCHAR},
+            </if>
+            <if test="shopAddr != null">
+                shop_addr = #{shopAddr,jdbcType=VARCHAR},
+            </if>
+            <if test="phone != null">
+                phone = #{phone,jdbcType=VARCHAR},
+            </if>
+            <if test="shopImg != null">
+                shop_img = #{shopImg,jdbcType=VARCHAR},
+            </if>
+            <if test="longitude != null">
+                longitude = #{longitude,jdbcType=DOUBLE},
+            </if>
+            <if test="latitude != null">
+                latitude = #{latitude,jdbcType=DOUBLE},
+            </if>
+            <if test="priority != null">
+                priority = #{priority,jdbcType=INTEGER},
+            </if>
+            <if test="createTime != null">
+                create_time = #{createTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="lastEditTime != null">
+                last_edit_time = #{lastEditTime,jdbcType=TIMESTAMP},
+            </if>
+            <if test="enableStatus != null">
+                enable_status = #{enableStatus,jdbcType=INTEGER},
+            </if>
+            <if test="advice != null">
+                advice = #{advice,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where shop_id = #{shopId,jdbcType=INTEGER}
+    </update>
+    <update id="updateByPrimaryKey" parameterType="com.hmb.pojo.Shop">
+    update tb_shop
+    set owner_id = #{ownerId,jdbcType=INTEGER},
+      area_id = #{areaId,jdbcType=INTEGER},
+      shop_category_id = #{shopCategoryId,jdbcType=INTEGER},
+      parent_category_id = #{parentCategoryId,jdbcType=INTEGER},
+      shop_name = #{shopName,jdbcType=VARCHAR},
+      shop_desc = #{shopDesc,jdbcType=VARCHAR},
+      shop_addr = #{shopAddr,jdbcType=VARCHAR},
+      phone = #{phone,jdbcType=VARCHAR},
+      shop_img = #{shopImg,jdbcType=VARCHAR},
+      longitude = #{longitude,jdbcType=DOUBLE},
+      latitude = #{latitude,jdbcType=DOUBLE},
+      priority = #{priority,jdbcType=INTEGER},
+      create_time = #{createTime,jdbcType=TIMESTAMP},
+      last_edit_time = #{lastEditTime,jdbcType=TIMESTAMP},
+      enable_status = #{enableStatus,jdbcType=INTEGER},
+      advice = #{advice,jdbcType=VARCHAR}
+    where shop_id = #{shopId,jdbcType=INTEGER}
+  </update>
+    <update id="updateSelective">
+        update tb_shop
+        <set>
+            <if test="shopImg != null">
+                shop_img = #{shopImg,jdbcType=VARCHAR},
+            </if>
+        </set>
+        where shop_name = #{shopName,jdbcType=VARCHAR}
+    </update>
+
+</mapper>

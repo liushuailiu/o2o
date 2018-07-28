@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>商品分类管理</title>
+        <meta name="viewport" content="initial-scale=1, maximum-scale=1">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+        <link rel="stylesheet" href="//g.alicdn.com/msui/sm/0.6.2/css/sm.min.css">
+        <link rel="stylesheet" href="//g.alicdn.com/msui/sm/0.6.2/css/sm-extend.min.css">
+        <link rel="stylesheet" href="../../../resources/css/shop/productcategorymanage.css">
+        <!--<script src="../../../resources/js/shop/productcategorymanage.js"></script>-->
+        <script src="../../../resources/js/shop/base/jquery-1.11.2.min.js"></script>
+        <script src="../../../resources/js/common/common.js"></script>
+        <script src="../../../resources/js/shop/base/layer.js"></script>
+        <link rel="stylesheet" href="../../../resources/css/shop/base/layer.css">
+    </head>
+<body>
+    <header class="bar bar-nav">
+        <a class="button button-link button-nav pull-left back" href="shopmanage.html" >
+            <span class="icon icon-left"></span>
+            返回
+        </a>
+        <h1 class="title">商品分类管理</h1>
+    </header>
+    <div class="content">
+        <div class="content-block">
+            <div class="row row-product-category">
+                <div class="col-33">类别</div>
+                <div class="col-33">优先级</div>
+                <div class="col-33">操作</div>
+            </div>
+            <div class="category-wrap">
+    
+            </div>
+        </div>
+        <div class="content-block">
+            <div class="row">
+                <div class="col-50">
+                    <a href="#" class="button button-big button-fill button-success" id="new">新增</a>
+                </div>
+                <div class="col-50">
+                    <a href="#" class="button button-big button-fill" id="submit">提交</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        $(function () {
+            var shopId = getQueryString('shopId');
+            var listUrl = '/product/listproductcategorys?shopId=' + shopId;
+            var addUrl = '/product/addproductcategorys';
+            var deleteUrl = '/product/removeproductcategory';
+
+            function getList() {
+                $.getJSON(listUrl,function (data) {
+                    if (data.success) {
+                        var dataList = data.data;
+                        $('.category-wrap').html('');
+                        var tempHtml = '';
+                        dataList
+                            .map(function (item, index) {
+                                tempHtml += ''
+                                    + '<div class="row row-product-category now">'
+                                    + '<div class="col-33 product-category-name">'
+                                    + item.productCategoryName
+                                    + '</div>'
+                                    + '<div class="col-33">'
+                                    + item.priority
+                                    + '</div>'
+                                    + '<div class="col-33"><a href="#" class="button delete" data-id="'
+                                    + item.productCategoryId
+                                    + '">删除</a></div>'
+                                    + '</div>';
+                            });
+                        $('.category-wrap').append(tempHtml);
+                    }
+                });
+            }
+
+            getList();
+
+            $('#submit').click(function () {
+                var tempArr = $('.temp');
+                var productCategoryList = [];
+                tempArr.map(function (index, item) {
+                    var tempObj = {};
+                    tempObj.productCategoryName = $(item).find('.category').val();
+                    tempObj.priority = $(item).find('.priority').val();
+                    if (tempObj.productCategoryName && tempObj.priority) {
+                        productCategoryList.push(tempObj);
+                    }
+                });
+                $.ajax({
+                    url: addUrl,
+                    type: 'POST',
+                    data: JSON.stringify(productCategoryList),
+                    contentType: 'application/json',
+                    success: function (data) {
+                        if (data.success) {
+                            layer.open({
+                                content: "提交成功！"
+                                ,skin: 'msg'
+                                ,time: 2 //2秒后自动关闭
+                            });
+                            getList();
+                        } else {
+                            layer.open({
+                                content: "提交失败！"
+                                ,skin: 'msg'
+                                ,time: 2 //2秒后自动关闭
+                            });
+                        }
+                    }
+                });
+            });
+
+            $('#new').click(
+                    function () {
+                        var tempHtml = '<div class="row row-product-category temp">'
+                            + '<div class="col-33"><input class="category-input category" type="text" placeholder="分类名"></div>'
+                            + '<div class="col-33"><input class="category-input priority" type="number" placeholder="优先级"></div>'
+                            + '<div class="col-33"><a href="#" class="button delete">删除</a></div>'
+                            + '</div>';
+                        $('.category-wrap').append(tempHtml);
+                    });
+
+            $('.category-wrap').on('click', '.row-product-category.now .delete',
+                function (e) {
+                    var target = e.currentTarget;
+                        layer.open({
+                            content: '您确定要删除吗？'
+                            ,btn: ['删除', '取消']
+                            ,yes: function(index){
+                                $.ajax({
+                                    url: deleteUrl,
+                                    type: 'POST',
+                                    data: {
+                                        productCategoryId: target.dataset.id,
+                                        shopId: shopId
+                                    },
+                                    dataType: 'json',
+                                    success: function (data) {
+                                        console.log(data);
+                                        if (data.success) {
+                                            layer.open({
+                                                content: "删除成功"
+                                                ,skin: 'msg'
+                                                ,time: 2 //2秒后自动关闭
+                                            });
+                                            getList();
+                                        } else {
+                                            layer.open({
+                                                content: "删除失败"
+                                                ,skin: 'msg'
+                                                ,time: 2 //2秒后自动关闭
+                                            });
+                                        }
+                                    }
+                                });
+                            }
+                        });
+
+
+                });
+
+            $('.category-wrap').on('click', '.row-product-category.temp .delete',
+                function (e) {
+                    console.log($(this).parent().parent());
+                    $(this).parent().parent().remove();
+
+                });
+        });
+    </script>
+    
+
+
+    <script type='text/javascript' src='//g.alicdn.com/sj/lib/zepto/zepto.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//g.alicdn.com/msui/sm/0.6.2/js/sm.min.js' charset='utf-8'></script>
+    <script type='text/javascript' src='//g.alicdn.com/msui/sm/0.6.2/js/sm-extend.min.js' charset='utf-8'></script>
+</body>
+</html>
